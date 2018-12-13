@@ -2,13 +2,14 @@ import Data.Text (Text, pack)
 import Data.Attoparsec.Combinator
 import Data.Attoparsec.Text
 import Data.Set (Set, fromList, empty, union, intersection, size)
+import qualified Data.Set as Set
 import Debug.Trace
 import Control.Monad
 
 main = do
     input <- readFile "input"
-    putStrLn $ solveA input
-    putStrLn $ solveB input
+--    putStrLn $ "a: " ++ (solveA input)
+    putStrLn $ "b: " ++ (solveB input)
 
 solveA :: String -> String
 solveA input = show $ size $ foldr addPoints empty $ filter idNeq $ liftM2 (,) lines' lines'
@@ -17,9 +18,25 @@ solveA input = show $ size $ foldr addPoints empty $ filter idNeq $ liftM2 (,) l
           idNeq = \(a,b) -> (Main.id a) /= (Main.id b)
 
 solveB :: String -> String
-solveB = undefined
+solveB input = show $ Main.id $ head $ walk lines' hasEmptyIntersection
     where lines' = map parseLine $ lines input
 
+
+hasEmptyIntersection :: [Line] -> Line -> [Line] -> Bool
+hasEmptyIntersection xs x xs' = Set.null $ foldr union empty intersections
+    where intersections = map (intersect x) (xs ++ xs')
+
+walk :: [a] -> ([a] -> a -> [a] -> Bool) -> [a]
+walk [] _ = []
+walk (x:xs) f = walk' [] x xs f
+
+walk' :: [a] -> a -> [a] -> ([a] -> a -> [a] -> Bool) -> [a]
+walk' before x [] f
+    | f before x []     = [x]
+    | otherwise         = []
+walk' before x xs f
+    | f before x xs = x : walk' (x:before) (head xs) (tail xs) f
+    | otherwise     = walk' (x:before) (head xs) (tail xs) f
 
 
 parseLine :: String -> Line
@@ -45,7 +62,7 @@ lineRule = do
     return $ Line id offsetX offsetY width height
 
 intersect :: Line -> Line -> Set Point
-intersect a b = trace (show $ Main.id a) $ intersection (contained a) (contained b)
+intersect a b = intersection (contained a) (contained b)
 
 contained :: Line -> Set Point
 contained line = fromList [(x,y) | x <- [loX..hiX], y <- [loY..hiY]]
