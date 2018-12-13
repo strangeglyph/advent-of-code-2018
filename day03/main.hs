@@ -1,8 +1,9 @@
-import Data.Array
 import Data.Text (Text, pack)
 import Data.Attoparsec.Combinator
 import Data.Attoparsec.Text
+import Data.Set (Set, fromList, empty, union, intersection, size)
 import Debug.Trace
+import Control.Monad
 
 main = do
     input <- readFile "input"
@@ -10,27 +11,15 @@ main = do
     putStrLn $ solveB input
 
 solveA :: String -> String
-solveA input = show $ length $ filter (>1) $ elems counted
+solveA input = show $ size $ foldr addPoints empty $ filter idNeq $ liftM2 (,) lines' lines'
     where lines' = map parseLine $ lines input
-          fld = field lines'
-          counted = foldl increment fld $ Prelude.take 1 lines'
+          addPoints = union . (uncurry intersect)
+          idNeq = \(a,b) -> (Main.id a) /= (Main.id b)
 
 solveB :: String -> String
 solveB = undefined
+    where lines' = map parseLine $ lines input
 
-
-
-
-field :: [Line] -> Array (Int,Int) Int
-field ls = array (boundsLs ls) [((i,j), 0) | i <- [0..extentX ls], j <- [0..extentY ls]]
-
-
-boundsLs :: [Line] -> ((Int, Int), (Int, Int))
-boundsLs ls = ((0, 0), (extentX ls, extentY ls))
-
-extentX, extentY :: [Line] -> Int
-extentX = maximum . map rightBorder
-extentY = maximum . map bottomBorder
 
 
 parseLine :: String -> Line
@@ -55,14 +44,11 @@ lineRule = do
     height <- decimal
     return $ Line id offsetX offsetY width height
 
-increment :: Array (Int,Int) Int -> Line -> Array (Int,Int) Int
-increment arr line = trace (show $ Main.id line) $! foldr incrementOne arr $ contained line
+intersect :: Line -> Line -> Set Point
+intersect a b = trace (show $ Main.id a) $ intersection (contained a) (contained b)
 
-incrementOne :: (Int, Int) -> Array (Int,Int) Int -> Array (Int,Int) Int
-incrementOne idx arr = trace (show idx) $! arr//[(idx,arr!idx)]
-
-contained :: Line -> [(Int, Int)]
-contained line = [(x,y) | x <- [loX..hiX], y <- [loY..hiY]]
+contained :: Line -> Set Point
+contained line = fromList [(x,y) | x <- [loX..hiX], y <- [loY..hiY]]
     where loX = offsetX line
           hiX = rightBorder line - 1
           loY = offsetY line
@@ -83,3 +69,5 @@ data Line = Line {
     width :: Int,
     height :: Int
 } deriving (Show)
+
+type Point = (Int, Int)
