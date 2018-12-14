@@ -1,5 +1,6 @@
-import Data.Char
 import Control.Monad
+import Data.Char
+import Data.List
 import Debug.Trace
 
 main = do
@@ -11,7 +12,8 @@ solveA :: String -> String
 solveA = show . length . fix contract
 
 solveB :: String -> String
-solveB = undefined
+solveB input = show $ minimum $ map (length . fix contract . stripUnit reduced) ['a'..'z']
+    where reduced = fix contract input
 
 fix :: (Eq a) => (a -> a) -> a -> a
 fix f x
@@ -25,3 +27,6 @@ contract (a:b:xs)
     | a == toUpper b && b == toLower a  = contract xs
     | b == toUpper a && a == toLower b  = contract xs
     | otherwise                         = a : contract (b:xs)
+
+stripUnit :: String -> Char -> String
+stripUnit s c = fix (delete (toUpper c) . delete (toLower c)) s
